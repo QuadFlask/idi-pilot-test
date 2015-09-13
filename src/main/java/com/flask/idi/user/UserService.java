@@ -31,8 +31,8 @@ public class UserService {
     }
 
     public User updateUser(User user, UserDto.Update updateDto) {
+        user.setFullName(updateDto.getFullName());
         user.setPassword(updateDto.getPassword());
-        user.setUsername(updateDto.getFullName());
         return userRepository.save(user);
     }
 

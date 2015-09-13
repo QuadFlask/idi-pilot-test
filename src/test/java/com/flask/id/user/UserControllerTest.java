@@ -1,8 +1,8 @@
 package com.flask.id.user;
 
 import com.Application;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flask.idi.user.User;
 import com.flask.idi.user.UserDto;
 import com.flask.idi.user.UserService;
 import org.junit.Before;
@@ -10,9 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.boot.test.SpringApplicationContextLoader;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,8 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,7 +47,7 @@ public class UserControllerTest {
 
     @Test
     public void testCreateUser() throws Exception {
-        UserDto.Create create = createUser("flask2", "password");
+        UserDto.Create create = createUserFixture("flask2", "password");
 
         ResultActions result = mockMvc
                 .perform(post("/user")
@@ -65,7 +62,7 @@ public class UserControllerTest {
 
     @Test
     public void testCreateUser_badRequest() throws Exception {
-        UserDto.Create create = createUser("flask", "");
+        UserDto.Create create = createUserFixture("flask", "");
 
         ResultActions result = mockMvc.perform(post("/user")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -77,7 +74,7 @@ public class UserControllerTest {
 
     @Test
     public void testUserDuplicatedException() throws Exception {
-        UserDto.Create create = createUser("flask1", "password");
+        UserDto.Create create = createUserFixture("flask1", "password");
 
         ResultActions result = mockMvc.perform(post("/user")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -96,16 +93,45 @@ public class UserControllerTest {
 
     @Test
     public void testGetUsers() throws Exception {
-        UserDto.Create createUser = createUser("flask1", "passwrod");
+        UserDto.Create createUser = createUserFixture("flask1", "password");
         userService.createUser(createUser);
         ResultActions result = mockMvc.perform(get("/users"));
 
         result.andDo(print());
         result.andExpect(status().isOk());
-        // {"content":[{"id":1,"username":"flask1","fullName":null,"joined":1442138512233,"updated":1442138512233}],"totalElements":1,"totalPages":1,"last":true,"size":20,"number":0,"first":true,"sort":null,"numberOfElements":1}
     }
 
-    private UserDto.Create createUser(String username, String password) {
+    @Test
+    public void testGetUser() throws Exception {
+        UserDto.Create createUser = createUserFixture("flask1", "password");
+        User createdUser = userService.createUser(createUser);
+
+        ResultActions result = mockMvc.perform(get("/users/" + createdUser.getId()));
+
+        result.andDo(print());
+        result.andExpect(status().isOk());
+    }
+
+    @Test
+    public void testUpdateUser() throws Exception {
+        UserDto.Create createUser = createUserFixture("flask1", "password");
+        User createdUser = userService.createUser(createUser);
+
+        UserDto.Update updateUser = new UserDto.Update();
+        updateUser.setFullName("flask2");
+        updateUser.setPassword("password2");
+
+        ResultActions result = mockMvc.perform(put("/users/" + createdUser.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateUser))
+        );
+
+        result.andDo(print());
+        result.andExpect(status().isOk());
+        result.andExpect(jsonPath("$.fullName", is("flask2")));
+    }
+
+    private UserDto.Create createUserFixture(String username, String password) {
         UserDto.Create create = new UserDto.Create();
         create.setUsername(username);
         create.setPassword(password);
