@@ -11,6 +11,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.MediaType;
+import org.springframework.security.web.FilterChainProxy;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -37,12 +38,17 @@ public class UserControllerTest {
     ObjectMapper objectMapper;
     @Autowired
     UserService userService;
+    @Autowired
+    FilterChainProxy springSecurityFilterChainProxy;
 
     MockMvc mockMvc;
 
     @Before
     public void setUp() throws Exception {
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(wac)
+                .addFilter(springSecurityFilterChainProxy)
+                .build();
     }
 
     @Test
@@ -129,6 +135,30 @@ public class UserControllerTest {
         result.andDo(print());
         result.andExpect(status().isOk());
         result.andExpect(jsonPath("$.fullName", is("flask2")));
+    }
+
+    @Test
+    public void testDeleteUser() throws Exception {
+        ResultActions result = mockMvc.perform(delete("/users/" + 0));
+
+        result.andDo(print());
+        result.andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testDeleteUser2() throws Exception {
+        ResultActions result = mockMvc.perform(delete("/users/" + 0));
+
+        result.andDo(print());
+        result.andExpect(status().isBadRequest());
+
+        UserDto.Create createUser = createUserFixture("flask1", "password");
+        User createdUser = userService.createUser(createUser);
+
+        result = mockMvc.perform(delete("/users/" + createdUser.getId()));
+
+        result.andDo(print());
+        result.andExpect(status().isNoContent());
     }
 
     private UserDto.Create createUserFixture(String username, String password) {

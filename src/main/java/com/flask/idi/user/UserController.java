@@ -3,6 +3,7 @@ package com.flask.idi.user;
 import com.flask.idi.commons.ErrorResponse;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -69,6 +70,14 @@ public class UserController {
         return new ResponseEntity(mapper.map(updateUser, UserDto.Response.class), HttpStatus.OK);
     }
 
+    @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
+    public ResponseEntity deleteUser(@PathVariable Long id) {
+        userService.delete(id);
+        return new ResponseEntity(HttpStatus.NO_CONTENT);
+    }
+
+
+
     @ExceptionHandler(UserNotFoundException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleUserNotFoundException(UserNotFoundException e) {
@@ -81,6 +90,15 @@ public class UserController {
     @ExceptionHandler(UserDuplicatedException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleUserDuplicatedException(UserDuplicatedException e) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setMessage("username is duplicated");
+        errorResponse.setCode("duplicated.username.exception");
+        return errorResponse;
+    }
+
+    @ExceptionHandler(EmptyResultDataAccessException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleUserNotExistException(UserDuplicatedException e) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setMessage("username is duplicated");
         errorResponse.setCode("duplicated.username.exception");

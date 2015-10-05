@@ -25,4 +25,6 @@ public class User {
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date joined;
+
+    private boolean admin;
 }
